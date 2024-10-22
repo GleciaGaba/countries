@@ -1,6 +1,7 @@
 "use strict";
 
 const countriesContainer = document.querySelector(".countries");
+const btn = document.querySelector(".submit");
 const MILLION_PEOPLE_UNIT = 1000000;
 
 /**
@@ -35,38 +36,106 @@ function renderCountry(data, className = "") {
   countriesContainer.style.opacity = 1;
 }
 
-// function getCountryData(country) {
+function renderError(msg) {
+  countriesContainer.insertAdjacentText("beforeend", msg);
+  countriesContainer.style.opacity = 1;
+}
+
+// function getCountryDataAndNeighbours(country) {
 //   const request = new XMLHttpRequest();
 //   request.open("GET", `https://restcountries.com/v3.1/name/${country}`);
 //   request.send();
 
 //   request.addEventListener("load", function () {
 //     const [data] = JSON.parse(this.responseText);
-
+//     //console.log(data);
 //     renderCountry(data);
+
+//     const borders = data.borders;
+//     // si le pays n'a pas de pays frontaliers on bloque l'execution du code ici
+//     if (!borders) {
+//       return;
+//     }
+
+//     const request2 = new XMLHttpRequest();
+//     request2.open(
+//       "GET",
+//       `https://restcountries.com/v3.1/alpha?codes=${borders}`
+//     );
+//     request2.send();
+
+//     request2.addEventListener("load", function () {
+//       const data = JSON.parse(this.responseText);
+
+//       data.forEach((country) => {
+//         renderCountry(country, "neighbour");
+//       });
+//     });
 //   });
 // }
 
-const getCountryDataAndNeighbours = (country) => {
-  fetch(`https://restcountries.com/v3.1/name/${country}`)
-    .then((response) => response.json())
-    .then(([data]) => {
-      renderCountry(data);
+//function getJSON(url, errorMsg = "Something went wrong") {
+//  return fetch(url).then((response) => {
+//    if (!response.ok) {
+//      throw new Error(errorMsg);
+//    }
+//    return response.json();
+//  });
+//}
 
-      const borders = data.borders;
-      // si le pays n'a pas de pays frontaliers on bloque l'execution du code ici
-      if (!borders) {
-        return;
-      }
+async function getJSON(url, errorMsg = "Something went wrong") {
+  let response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(errorMsg);
+  }
+  let data = await response.json();
 
-      return fetch(`https://restcountries.com/v3.1/alpha?codes=${borders}`);
-    })
-    .then((response) => response.json())
+  return data;
+}
+
+async function getCountryDataAndNeighbours(country) {
+  const data = await getJSON(
+    `https://restcountries.com/v3.1/name/${country}?fullText=true`,
+    "API request error : enter a valid country name"
+  );
+
+  renderCountry(data[0]);
+
+  const borders = data[0].borders;
+  // si le pays n'a pas de pays frontaliers on bloque l'execution du code ici
+  if (!borders) {
+    throw new Error("It is an island : no borders");
+  }
+
+  const dataBorders = await getJSON(
+    `https://restcountries.com/v3.1/alpha?codes=${borders}`,
+    "API request error"
+  );
+
+  dataBorders.forEach((country) => {
+    return renderCountry(country, "neighbour");
+  });
+}
+
+btn.addEventListener("click", () => {
+  getCountryDataAndNeighbours("france");
+});
+
+function whereAmI(lat, lng) {
+  getJSON(
+    `https://api.opencagedata.com/geocode/v1/json?q=${lat}%2C${lng}&language=en&key=a806e95f1e1d4808a5620860758b5a97`
+  )
     .then((data) => {
-      data.forEach((country) => {
-        renderCountry(country, "neighbour");
-      });
-    });
-};
+      const city = data.results[0].components.city;
+      const country = data.results[0].components.country;
 
-getCountryDataAndNeighbours("france");
+      getCountryDataAndNeighbours(country);
+
+      console.log(`You are in ${city}, ${country}.`);
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+}
+
+whereAmI(35.689, 139.69);

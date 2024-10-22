@@ -127,3 +127,13 @@ body {
     border: 3rem solid white;
     box-shadow: 0 2rem 5rem 1rem rgba(0, 0, 0, 0.1);
 }
+
+.submit {
+    background-color: #28a745;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    }
